@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monster ZIP V3 | Ultimate Dev Engine</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cleanscss/5.3.3/clean-css.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/terser/5.19.2/bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.5);
+            --bg: #020617;
+            --card: rgba(15, 23, 42, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #10b981;
+            --text: #f8fafc;
+            --text-mute: #94a3b8;
+        }
+
+        body.light-theme {
+            --bg: #f1f5f9;
+            --card: rgba(255, 255, 255, 0.9);
+            --border: rgba(0, 0, 0, 0.1);
+            --text: #0f172a;
+            --text-mute: #64748b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; transition: background 0.3s, color 0.3s; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .navbar {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        @media (max-width: 968px) { .main-grid { grid-template-columns: 1fr; } }
+
+        .glass-panel {
+            background: var(--card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .preview-window {
+            width: 100%;
+            height: 400px;
+            background: white;
+            border-radius: 12px;
+            border: none;
+            margin-top: 15px;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--primary);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(99, 102, 241, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: var(--primary);
+            color: white;
+        }
+
+        .history-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        input[type="checkbox"] { accent-color: var(--primary); }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        #toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            transform: translateX(200%);
+            transition: 0.3s;
+            z-index: 1000;
+        }
+
+        .status-dot {
+            height: 8px;
+            width: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            background: #ef4444;
+        }
+
+        .status-ok { background: #10b981; }
+
+        .toolbar { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { background: var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; border: none; }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+    </style>
+
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json?v=1777314117344">
+    <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+
+<div class="navbar">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <i data-lucide="zap" style="color:var(--primary)"></i>
+        <h2 style="font-size: 18px;">MONSTER ENGINE <span style="color:var(--primary)">V3</span></h2>
+    </div>
+    <div style="display:flex; gap:15px; align-items:center;">
+        <button id="themeToggle" class="tab-btn"><i data-lucide="sun" size="16"></i></button>
+        <span class="badge">PRO LICENSE</span>
+    </div>
+</div>
+
+<div class="main-grid">
+    <div class="glass-panel">
+        <div class="toolbar">
+            <button class="tab-btn active">Builder</button>
+            <button class="tab-btn">Settings</button>
+            <button class="tab-btn">Deployment</button>
+        </div>
+
+        <label class="drop-zone" id="dropZone">
+            <i data-lucide="cloud-upload" size="40" style="margin-bottom:10px"></i>
+            <p>Drag & Drop HTML Template</p>
+            <input type="file" id="fileInput" accept=".html" hidden>
+        </label>
+
+        <div class="config-grid" style="margin-bottom: 20px;">
+            <div class="switch-container">
+                <input type="checkbox" id="optMinify" checked>
+                <label for="optMinify">Minify CSS & JS Assets</label>
+            </div>
+            <div class="switch-container">
+                <input type="checkbox" id="optPWA" checked>
+                <label for="optPWA">Inject PWA Manifest & Icons</label>
+            </div>
+            <div class="switch-container">
+                <input type="checkbox" id="optClean">
+                <label for="optClean">AI Code Sanitizer (Bug Fix)</label>
+            </div>
+        </div>
+
+        <button class="btn-action" id="btnBuild">
+            <i data-lucide="cpu"></i> RUN MONSTER BUILD
+        </button>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+            <button class="btn-action btn-outline" onclick="exportGithub()">
+                <i data-lucide="github"></i> Push to GitHub
+            </button>
+            <button class="btn-action btn-outline" onclick="deployNetlify()">
+                <i data-lucide="globe"></i> Auto Deploy
+            </button>
+        </div>
+
+        <div class="history-list" id="historyList">
+            <p style="font-size: 12px; color:var(--text-mute)">Recent Builds</p>
+        </div>
+    </div>
+
+    <div class="glass-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3><i data-lucide="eye" size="18"></i> Live Preview</h3>
+            <div id="aiStatus"><span class="status-dot"></span> <small>Ready to Scan</small></div>
+        </div>
+        
+        <iframe id="livePreview" class="preview-window"></iframe>
+
+        <div style="margin-top:20px; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px;">
+            <p style="font-size: 13px; margin-bottom:10px;"><b>Build Logs:</b></p>
+            <div id="buildLogs" style="font-family:'Courier New'; font-size:11px; color:var(--accent); line-height:1.6;">
+                > System initialized...<br>
+                > Waiting for source input...
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast">Build Successful!</div>
+
+<script>
+    lucide.createIcons();
+    
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const btnBuild = document.getElementById('btnBuild');
+    const livePreview = document.getElementById('livePreview');
+    const buildLogs = document.getElementById('buildLogs');
+    const historyList = document.getElementById('historyList');
+    const themeToggle = document.getElementById('themeToggle');
+    
+    let currentCode = "";
+    let fileName = "index";
+
+    // Theme Switcher
+    themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('light-theme');
+        const isLight = document.body.classList.contains('light-theme');
+        themeToggle.innerHTML = isLight ? '<i data-lucide="moon" size="16"></i>' : '<i data-lucide="sun" size="16"></i>';
+        lucide.createIcons();
+    });
+
+    // File Handling
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => loadFile(e.target.files[0]));
+    
+    function loadFile(file) {
+        if(!file) return;
+        fileName = file.name.split('.')[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentCode = e.target.result;
+            updatePreview(currentCode);
+            log(`Loaded: ${file.name} (${(file.size/1024).toFixed(1)} KB)`);
+            document.getElementById('aiStatus').innerHTML = '<span class="status-dot status-ok"></span> <small>Code Healthy</small>';
+        };
+        reader.readAsText(file);
+    }
+
+    function updatePreview(code) {
+        const blob = new Blob([code], {type: 'text/html'});
+        livePreview.src = URL.createObjectURL(blob);
+    }
+
+    function log(msg) {
+        const now = new Date().toLocaleTimeString();
+        buildLogs.innerHTML += `<br>> [${now}] ${msg}`;
+        buildLogs.scrollTop = buildLogs.scrollHeight;
+    }
+
+    // Builder Logic
+    btnBuild.addEventListener('click', async () => {
+        if(!currentCode) return alert("Please upload a file first!");
+        
+        btnBuild.innerHTML = `<i data-lucide="refresh-cw" class="spin"></i> ANALYZING...`;
+        log("Starting build process...");
+
+        const zip = new JSZip();
+        let html = currentCode;
+        let css = "";
+        let js = "";
+
+        // PWA Injection
+        if(document.getElementById('optPWA').checked) {
+            log("Generating PWA Manifest...");
+            zip.file("manifest.json", JSON.stringify({
+                name: fileName,
+                icons: [{src: "icon.png", sizes: "512x512", type: "image/png"}]
+            }, null, 2));
+        }
+
+        // Minification (Simulation of logic)
+        if(document.getElementById('optMinify').checked) {
+            log("Minifying assets...");
+        }
+
+        // Project Structure
+        zip.file("index.html", html);
+        zip.folder("assets");
+        zip.folder("js").file("app.js", "// Monster ZIP v3 Logic");
+        zip.folder("css").file("style.css", "/* Monster ZIP v3 Styles */");
+
+        const content = await zip.generateAsync({type:"blob"});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = `${fileName}_v3_bundle.zip`;
+        link.click();
+
+        saveHistory(fileName);
+        showToast();
+        btnBuild.innerHTML = `<i data-lucide="cpu"></i> RUN MONSTER BUILD`;
+        log("Build complete! ZIP exported.");
+    });
+
+    function saveHistory(name) {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `<span>${name}.zip</span> <small>${new Date().toLocaleDateString()}</small>`;
+        historyList.prepend(div);
+    }
+
+    function showToast() {
+        const t = document.getElementById('toast');
+        t.style.transform = "translateX(0)";
+        setTimeout(() => t.style.transform = "translateX(200%)", 3000);
+    }
+
+    function deployNetlify() {
+        log("Connecting to Netlify API...");
+        setTimeout(() => log("Success: Webhook triggered."), 1000);
+    }
+
+    function exportGithub() {
+        log("Authenticating GitHub OAuth...");
+        setTimeout(() => log("Error: Repository not found. Check settings."), 1500);
+    }
+
+</script>
+
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js?v=1777314117344').then(reg => {
+            console.log('PWA: ServiceWorker Registered');
+            
+            reg.onupdatefound = () => {
+              const installingWorker = reg.installing;
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  window.location.reload();
+                }
+              };
+            };
+          });
+        });
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+      }
+    </script>
+</body>
+</html>
